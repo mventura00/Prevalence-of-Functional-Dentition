@@ -7,6 +7,7 @@ We used data from the Behavioral Risk Factor Surveillance Survey (BRFSS) for the
 
 Methods 
 Data Source
+
 We used data from the Behavioral Risk Factor Surveillance Survey (BRFSS) for the years 2007 to 2018.  Note that BRFSS uses multistage sampling.  We therefore performed our analysis in R-Studio (v.4.3.0) to account for the oversampling and multistage clustering used in the survey.  Medicaid-eligible individuals were stratified by age (35 to 39, 40 to 44, 45 to 49, and 50 to 54), education (less than high school, high school, more than high school), sex (female, male), race/ethnicity (White non-Hispanic, Black non-Hispanic, Hispanic, other), smoking history (current smoker, former smoker, or never have smoked), and general health status (fair/poor, or excellent/very good/good).  We also included the state where the individual lived.
 
 Study Design and Model Parameters
