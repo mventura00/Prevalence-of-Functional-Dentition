@@ -1,4 +1,5 @@
 # Prevalence-of-Functional-Dentition
+By Marta Ventura, Paul Griffin, and Susan Griffin
 
 This is our R-code for the paper we are submitting to the CDC for clearance and then to the Journal of Dental Research. 
 
