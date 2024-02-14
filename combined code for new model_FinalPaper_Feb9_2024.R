@@ -1,3 +1,7 @@
+#Prevalence-of-Functional-Dentition
+# By Marta Ventura, Paul Griffin, and Susan Griffin (Jan 15 , 2024), Penn State University, Dept of Industrial & Mfg Engr
+# email for Marta Ventura:  mxv176@psu.edu
+
 
 #install.packages("installr")
 #library(installr)
