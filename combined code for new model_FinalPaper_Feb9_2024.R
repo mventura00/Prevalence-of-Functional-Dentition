@@ -119,10 +119,10 @@ count(BRFSS_18, funcdent)
 
 BRFSS_12 <- mutate(BRFSS_12,
                    CB_0718 = case_when(
-                     `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed (REFERENCE VARIABLE)
+                     `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed  
                      `_STATE` %in% c(2,5,9,11,17, 18,19,21,22,25,26,27,30,31,34,35,36,37,38,39, 41,42,44,46,50,53,55) ~ 3, #ALWAYS Exposed
-                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1,  #GAINED EXPOSURE (REFERENCE)
-                     `_STATE` %in% c(15) ~ 1,  #LOST EXPOSURE (REFERENCE)
+                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1,  #GAINED EXPOSURE    #REFERENCE VARIABLE
+                     `_STATE` %in% c(15) ~ 1,  #LOST EXPOSURE                   #REFERENCE VARIABLE (also)
                      TRUE ~ NA_real_
                    ))
 
@@ -135,8 +135,8 @@ BRFSS_18 <- mutate(BRFSS_18,
                    CB_0718 = case_when(
                      `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed
                      `_STATE` %in% c(2,5,9,11,17, 18,19,21,22,25,26,27,30,31,34,35,36,37,38,39, 41,42,44,46,50,53,55) ~ 3, #Always Exposed aka KEPT
-                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1, #Gained exposure
-                     `_STATE` %in% c(15) ~ 1,  #Lost exposure  #HAWAII 
+                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1, #Gained exposure    #REFERENCE VARIABLE
+                     `_STATE` %in% c(15) ~ 1,  #Lost exposure  #HAWAII          #REFERENCE VARIABLE (also)
                      TRUE ~ NA_real_
                    ))
 
@@ -171,7 +171,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                    educate = case_when(
                      `_EDUCAG` == 1 ~ 2,  # < than HS
                      `_EDUCAG` == 2 ~ 3,  #only HS
-                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS
+                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS  #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -181,7 +181,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                    educate = case_when(
                      `_EDUCAG` == 1 ~ 2,  # < than HS
                      `_EDUCAG` == 2 ~ 3,  #only HS
-                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS
+                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS    #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -194,7 +194,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                      `_AGEG5YR` == 4 ~ 2,  #AGED 35 - 39
                      `_AGEG5YR` == 5 ~ 3,  #AGED 40 - 44
                      `_AGEG5YR` == 6 ~ 4,  #OLDER PEOPLE  45 - 49 (all group into one category)
-                     `_AGEG5YR` == 7 ~ 1,  #OLDER PEOPLE  50 - 54 (all group into one category)
+                     `_AGEG5YR` == 7 ~ 1,  #OLDER PEOPLE  50 - 54 (all group into one category) #REFERENCE VARIABLE
                      #`_AGEG5YR` == 8 ~ 1,  #OLDER PEOPLE   55 - 59  (all group into one category)
                      TRUE ~ NA_real_
                    ))
@@ -229,7 +229,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                      `_AGEG5YR` == 4 ~ 2,   #AGED 35 - 39
                      `_AGEG5YR` == 5 ~ 3,   #AGED 40 - 44
                      `_AGEG5YR` == 6 ~ 4,   #OLDER PEOPLE  45 - 49 (all group into one category)
-                     `_AGEG5YR` == 7 ~ 1,   #OLDER PEOPLE  50 - 54 (all group into one category)
+                     `_AGEG5YR` == 7 ~ 1,   #OLDER PEOPLE  50 - 54 (all group into one category)    #REFERENCE VARIABLE
                      #`_AGEG5YR` == 8 ~ 1,   #OLDER PEOPLE  55 - 59 (all group into one category)
                      TRUE ~ NA_real_
                    ))
@@ -260,7 +260,7 @@ count(BRFSS_18, `_AGEG5YR`, agecat_more)
 BRFSS_12 <- mutate(BRFSS_12,
                    male = case_when(
                      SEX == 1 ~ 2, # MALE 
-                     SEX == 2 ~ 1, # FEMALE (reference)
+                     SEX == 2 ~ 1, # FEMALE      #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -271,7 +271,7 @@ count(BRFSS_12, SEX, male)
 BRFSS_18 <- mutate(BRFSS_18,
                    male = case_when(
                      SEX1 == 1 ~ 2, #males
-                     SEX1 == 2 ~ 1, #female (reference)
+                     SEX1 == 2 ~ 1, #female      #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -282,7 +282,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                    smoker = case_when(
                      `_SMOKER3` %in% c(1,2) ~ 2,  # CURRENT smoker (Reference variable)
                      `_SMOKER3` == 3 ~ 3,  # Former smoker (they used to smoke)
-                     `_SMOKER3` == 4 ~ 1,  # NEVER smoked
+                     `_SMOKER3` == 4 ~ 1,  # NEVER smoked      #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -293,7 +293,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                    smoker = case_when(
                      `_SMOKER3` %in% c(1,2) ~ 2,  # CURRENT smoker (Reference variable) - smokes some days, or everyday 
                      `_SMOKER3` == 3 ~ 3,         # Former smoker (they used to smoke)
-                     `_SMOKER3` == 4 ~ 1,         # NEVER smoked
+                     `_SMOKER3` == 4 ~ 1,         # NEVER smoked     #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -306,7 +306,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                      `_RACE_G` == 1 ~ 2,  # White Not-Hispanic
                      `_RACE_G` == 2 ~ 3,  # Black  Not-Hispanic
                      `_RACE_G` == 3 ~ 4,  # Hispanic
-                     `_RACE_G` %in% c(4,5) ~ 1,  # Other Multi
+                     `_RACE_G` %in% c(4,5) ~ 1,  # Other Multi      #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -318,7 +318,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                      `_RACE_G1` == 1 ~ 2,  # White Not-Hispanic
                      `_RACE_G1` == 2 ~ 3,  # Black  Not-Hispanic
                      `_RACE_G1` == 3 ~ 4,  # Hispanic
-                     `_RACE_G1` %in% c(4,5) ~ 1,  # Other Multi
+                     `_RACE_G1` %in% c(4,5) ~ 1,  # Other Multi     #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -329,7 +329,7 @@ count(BRFSS_18, `_RACE_G1`, raceethn)
 BRFSS_12 <- mutate(BRFSS_12,
                    poorhlth = case_when(
                      GENHLTH %in% c(4,5) ~ 2,  # Poor Health
-                     GENHLTH %in% c(1,2,3) ~ 1,  #Excellent/Good health
+                     GENHLTH %in% c(1,2,3) ~ 1,  #Excellent/Good health    #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -339,7 +339,7 @@ count(BRFSS_12, GENHLTH, poorhlth)
 BRFSS_18 <- mutate(BRFSS_18,
                    poorhlth = case_when(
                      GENHLTH %in% c(4,5) ~ 2, # Poor Health
-                     GENHLTH %in% c(1,2,3) ~ 1, #Excellent/Good health
+                     GENHLTH %in% c(1,2,3) ~ 1, #Excellent/Good health      #REFERENCE VARIABLE
                      TRUE ~ NA_real_
                    ))
 
@@ -391,7 +391,7 @@ BRFSS_12 <- mutate(BRFSS_12,
 BRFSS_12 <- mutate(BRFSS_12,
                    pov138two = case_when(
                      pov <= 1.33 ~ 2,   # QUALIFY FOR MEDICAID : 138% * FPL . = 1.38*11170 = 15,414 , for 1 member
-                     pov > 1.33 ~ 1, TRUE ~ NA_real_))  # NOT qualified for Medicaid
+                     pov > 1.33 ~ 1, TRUE ~ NA_real_))  # NOT qualified for Medicaid               #REFERENCE VARIABLE
 
 
 
@@ -446,7 +446,7 @@ count(BRFSS_18, pov)
 BRFSS_18 <- mutate(BRFSS_18,
                    pov138two = case_when(
                      pov <= 1.38 ~ 2,  #Medicaid
-                     pov > 1.38 ~ 1, TRUE ~ NA_real_))  #NOT Medicaid
+                     pov > 1.38 ~ 1, TRUE ~ NA_real_))  #NOT Medicaid         #REFERENCE VARIABLE
 
 
 
