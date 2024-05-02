@@ -1,7 +1,3 @@
-#Prevalence-of-Functional-Dentition
-# By Marta Ventura, Paul Griffin, and Susan Griffin (Jan 15 , 2024), Penn State University, Dept of Industrial & Mfg Engr
-# email for Marta Ventura:  mxv176@psu.edu
-
 
 #install.packages("installr")
 #library(installr)
@@ -20,6 +16,7 @@ library(tidyverse)
 
 library(jtools)
 library(ggplot2)
+library(car)
 library("plotrix")
 
 
@@ -119,10 +116,10 @@ count(BRFSS_18, funcdent)
 
 BRFSS_12 <- mutate(BRFSS_12,
                    CB_0718 = case_when(
-                     `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed  
+                     `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed (REFERENCE VARIABLE)
                      `_STATE` %in% c(2,5,9,11,17, 18,19,21,22,25,26,27,30,31,34,35,36,37,38,39, 41,42,44,46,50,53,55) ~ 3, #ALWAYS Exposed
-                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1,  #GAINED EXPOSURE    #REFERENCE VARIABLE
-                     `_STATE` %in% c(15) ~ 1,  #LOST EXPOSURE                   #REFERENCE VARIABLE (also)
+                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1,  #GAINED EXPOSURE (REFERENCE)
+                     `_STATE` %in% c(15) ~ 1,  #LOST EXPOSURE (REFERENCE)
                      TRUE ~ NA_real_
                    ))
 
@@ -135,8 +132,8 @@ BRFSS_18 <- mutate(BRFSS_18,
                    CB_0718 = case_when(
                      `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed
                      `_STATE` %in% c(2,5,9,11,17, 18,19,21,22,25,26,27,30,31,34,35,36,37,38,39, 41,42,44,46,50,53,55) ~ 3, #Always Exposed aka KEPT
-                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1, #Gained exposure    #REFERENCE VARIABLE
-                     `_STATE` %in% c(15) ~ 1,  #Lost exposure  #HAWAII          #REFERENCE VARIABLE (also)
+                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1, #Gained exposure
+                     `_STATE` %in% c(15) ~ 1,  #Lost exposure  #HAWAII 
                      TRUE ~ NA_real_
                    ))
 
@@ -171,7 +168,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                    educate = case_when(
                      `_EDUCAG` == 1 ~ 2,  # < than HS
                      `_EDUCAG` == 2 ~ 3,  #only HS
-                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS  #REFERENCE VARIABLE
+                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS
                      TRUE ~ NA_real_
                    ))
 
@@ -181,7 +178,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                    educate = case_when(
                      `_EDUCAG` == 1 ~ 2,  # < than HS
                      `_EDUCAG` == 2 ~ 3,  #only HS
-                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS    #REFERENCE VARIABLE
+                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS
                      TRUE ~ NA_real_
                    ))
 
@@ -194,7 +191,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                      `_AGEG5YR` == 4 ~ 2,  #AGED 35 - 39
                      `_AGEG5YR` == 5 ~ 3,  #AGED 40 - 44
                      `_AGEG5YR` == 6 ~ 4,  #OLDER PEOPLE  45 - 49 (all group into one category)
-                     `_AGEG5YR` == 7 ~ 1,  #OLDER PEOPLE  50 - 54 (all group into one category) #REFERENCE VARIABLE
+                     `_AGEG5YR` == 7 ~ 1,  #OLDER PEOPLE  50 - 54 (all group into one category)
                      #`_AGEG5YR` == 8 ~ 1,  #OLDER PEOPLE   55 - 59  (all group into one category)
                      TRUE ~ NA_real_
                    ))
@@ -229,7 +226,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                      `_AGEG5YR` == 4 ~ 2,   #AGED 35 - 39
                      `_AGEG5YR` == 5 ~ 3,   #AGED 40 - 44
                      `_AGEG5YR` == 6 ~ 4,   #OLDER PEOPLE  45 - 49 (all group into one category)
-                     `_AGEG5YR` == 7 ~ 1,   #OLDER PEOPLE  50 - 54 (all group into one category)    #REFERENCE VARIABLE
+                     `_AGEG5YR` == 7 ~ 1,   #OLDER PEOPLE  50 - 54 (all group into one category)
                      #`_AGEG5YR` == 8 ~ 1,   #OLDER PEOPLE  55 - 59 (all group into one category)
                      TRUE ~ NA_real_
                    ))
@@ -260,7 +257,7 @@ count(BRFSS_18, `_AGEG5YR`, agecat_more)
 BRFSS_12 <- mutate(BRFSS_12,
                    male = case_when(
                      SEX == 1 ~ 2, # MALE 
-                     SEX == 2 ~ 1, # FEMALE      #REFERENCE VARIABLE
+                     SEX == 2 ~ 1, # FEMALE (reference)
                      TRUE ~ NA_real_
                    ))
 
@@ -271,7 +268,7 @@ count(BRFSS_12, SEX, male)
 BRFSS_18 <- mutate(BRFSS_18,
                    male = case_when(
                      SEX1 == 1 ~ 2, #males
-                     SEX1 == 2 ~ 1, #female      #REFERENCE VARIABLE
+                     SEX1 == 2 ~ 1, #female (reference)
                      TRUE ~ NA_real_
                    ))
 
@@ -282,7 +279,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                    smoker = case_when(
                      `_SMOKER3` %in% c(1,2) ~ 2,  # CURRENT smoker (Reference variable)
                      `_SMOKER3` == 3 ~ 3,  # Former smoker (they used to smoke)
-                     `_SMOKER3` == 4 ~ 1,  # NEVER smoked      #REFERENCE VARIABLE
+                     `_SMOKER3` == 4 ~ 1,  # NEVER smoked
                      TRUE ~ NA_real_
                    ))
 
@@ -293,7 +290,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                    smoker = case_when(
                      `_SMOKER3` %in% c(1,2) ~ 2,  # CURRENT smoker (Reference variable) - smokes some days, or everyday 
                      `_SMOKER3` == 3 ~ 3,         # Former smoker (they used to smoke)
-                     `_SMOKER3` == 4 ~ 1,         # NEVER smoked     #REFERENCE VARIABLE
+                     `_SMOKER3` == 4 ~ 1,         # NEVER smoked
                      TRUE ~ NA_real_
                    ))
 
@@ -306,7 +303,7 @@ BRFSS_12 <- mutate(BRFSS_12,
                      `_RACE_G` == 1 ~ 2,  # White Not-Hispanic
                      `_RACE_G` == 2 ~ 3,  # Black  Not-Hispanic
                      `_RACE_G` == 3 ~ 4,  # Hispanic
-                     `_RACE_G` %in% c(4,5) ~ 1,  # Other Multi      #REFERENCE VARIABLE
+                     `_RACE_G` %in% c(4,5) ~ 1,  # Other Multi
                      TRUE ~ NA_real_
                    ))
 
@@ -318,7 +315,7 @@ BRFSS_18 <- mutate(BRFSS_18,
                      `_RACE_G1` == 1 ~ 2,  # White Not-Hispanic
                      `_RACE_G1` == 2 ~ 3,  # Black  Not-Hispanic
                      `_RACE_G1` == 3 ~ 4,  # Hispanic
-                     `_RACE_G1` %in% c(4,5) ~ 1,  # Other Multi     #REFERENCE VARIABLE
+                     `_RACE_G1` %in% c(4,5) ~ 1,  # Other Multi
                      TRUE ~ NA_real_
                    ))
 
@@ -329,7 +326,7 @@ count(BRFSS_18, `_RACE_G1`, raceethn)
 BRFSS_12 <- mutate(BRFSS_12,
                    poorhlth = case_when(
                      GENHLTH %in% c(4,5) ~ 2,  # Poor Health
-                     GENHLTH %in% c(1,2,3) ~ 1,  #Excellent/Good health    #REFERENCE VARIABLE
+                     GENHLTH %in% c(1,2,3) ~ 1,  #Excellent/Good health
                      TRUE ~ NA_real_
                    ))
 
@@ -339,7 +336,7 @@ count(BRFSS_12, GENHLTH, poorhlth)
 BRFSS_18 <- mutate(BRFSS_18,
                    poorhlth = case_when(
                      GENHLTH %in% c(4,5) ~ 2, # Poor Health
-                     GENHLTH %in% c(1,2,3) ~ 1, #Excellent/Good health      #REFERENCE VARIABLE
+                     GENHLTH %in% c(1,2,3) ~ 1, #Excellent/Good health
                      TRUE ~ NA_real_
                    ))
 
@@ -391,7 +388,7 @@ BRFSS_12 <- mutate(BRFSS_12,
 BRFSS_12 <- mutate(BRFSS_12,
                    pov138two = case_when(
                      pov <= 1.33 ~ 2,   # QUALIFY FOR MEDICAID : 138% * FPL . = 1.38*11170 = 15,414 , for 1 member
-                     pov > 1.33 ~ 1, TRUE ~ NA_real_))  # NOT qualified for Medicaid               #REFERENCE VARIABLE
+                     pov > 1.33 ~ 1, TRUE ~ NA_real_))  # NOT qualified for Medicaid
 
 
 
@@ -446,7 +443,7 @@ count(BRFSS_18, pov)
 BRFSS_18 <- mutate(BRFSS_18,
                    pov138two = case_when(
                      pov <= 1.38 ~ 2,  #Medicaid
-                     pov > 1.38 ~ 1, TRUE ~ NA_real_))  #NOT Medicaid         #REFERENCE VARIABLE
+                     pov > 1.38 ~ 1, TRUE ~ NA_real_))  #NOT Medicaid
 
 
 
@@ -484,6 +481,7 @@ count(total,CB_1218)
 
 levels(total$CB_0718)
 levels(total$survyear)
+levels(total$pov138two)
 # Change the reference level to '6'
 total$survyear <- relevel(total$survyear, ref = "2018")
 
@@ -494,13 +492,13 @@ levels(total$survyear)
 
 design1 <- svydesign(id = ~1, strata = ~`_STSTR`, weights = ~`_LLCPWT`, data = total)  # COMPLEX SURVEY
 design1
-
+summary(design1)
 #total$l
 count(BRFSS_18, `_AGEG5YR`, agecat_more)
 
 ## MEDICAID ELIGIBLE
 #MEDICAID , both years
-filter1<-filter(total, pov138two ==2)  # NOT Medicaid, 2012 & 2018
+filter1<-filter(total, pov138two ==2)  # Medicaid, 2012 & 2018
 summary(filter1)
 count(filter1)
 
@@ -880,6 +878,7 @@ model1 <- svyglm(as.factor(funcdent) ~
                    `_STATE`, 
                  design = design1, family=binomial)
 
+summary(model_1)
 
 #MODEL 1 - DID probabilities!!!   DID NOT DROP MISSING VALUES (I COMMENTED those lines out)
 # LEFT HAND SIDE
@@ -1138,10 +1137,10 @@ barplot(formula=prop, horiz = FALSE,
         border = "dark blue", 
         col = "pink")
 
-
+str(design1$variables)
+# THIRD MODEL!!!!!!
 # MODEL #3 - Proportions and DID Calculations
-model_3 <- svyglm(as.factor(funcdent) ~ CB_0718 + survyear + pov138two
-                  + CB_0718: survyear 
+model_3 <- svyglm(as.factor(funcdent) ~ CB_0718 + survyear + pov138two + CB_0718: survyear 
                   + CB_0718:pov138two
                   + survyear:pov138two
                   + CB_0718:survyear:pov138two
@@ -1150,6 +1149,35 @@ model_3 <- svyglm(as.factor(funcdent) ~ CB_0718 + survyear + pov138two
                   family = binomial)
 
 summary(model_3)
+
+
+probabilities <- predict(model_3, total, type = "response")
+probabilities
+predicted.classes <- ifelse(probabilities > 0.5, "pos", "neg")
+head(predicted.classes)
+
+mydata <- total %>%dplyr::select_if(is.numeric) 
+predictors <- colnames(mydata)
+# Bind the logit and tidying the data for plot
+mydata <- mydata %>% 
+  mutate(logit = log(probabilities/(1-probabilities))) %>% 
+  gather(key = "predictors", value = "predictor.value", -logit)
+ 
+  # IT CREATES A NEW COLUMN , that does that logit transformation
+  # logistic model creates probability...so this logit  is a scatter plot of transformation vs. each predictor. we'd want a 
+  # stragith line.   Look at black dots instead of blue line. Would be concerned about pedigree where it makes a curve. Oh no, not making linearity
+  # so then, if it is nonlinear, then we'd want to take the squre root that , or log of the variable 
+
+ggplot(mydata, aes(logit, predictor.value))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "loess") + 
+  theme_bw() + 
+  facet_wrap(~predictors, scales = "free_y")
+
+
+
+#vif(model_3)
+car::vif(model_3)
 
 
 #MODEL 3  DID !! Last model!!  DO THIS DID RESULTS FOR MODEL #3 -- and PLOTS!!FOR PAPER!!!
