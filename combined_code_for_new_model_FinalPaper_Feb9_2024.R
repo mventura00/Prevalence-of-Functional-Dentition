@@ -1,0 +1,1713 @@
+
+#install.packages("installr")
+#library(installr)
+#updateR()
+
+#Set working directory
+#setwd("C:/Users/mxv17/OneDrive/Desktop/R_for_BRFSS")
+
+#check working directory
+#getwd()
+
+#install.packages('haven')
+
+library(dplyr)
+#library(MASS)
+library(haven)
+library(survey)
+library(tidyverse)
+
+library(jtools)
+library(ggplot2)
+library(car)
+library("plotrix")
+library(svydiags)
+
+
+#loading the datasets into R
+BRFSS_12 <- read_sas("C:/Users/mxv17/OneDrive/Desktop/R_for_BRFSS/LLCP2012.sas7bdat")
+BRFSS_18 <- read_sas("C:/Users/mxv17/OneDrive/Desktop/R_for_BRFSS/llcp2018.sas7bdat")
+
+options(survey.lonely.psu = "adjust")
+
+
+#mutation
+
+#Creating the different survey years (2012 and 2018)
+BRFSS_12 <- mutate(BRFSS_12,survyear = 2012)
+BRFSS_18 <- mutate(BRFSS_18,survyear = 2018)
+
+
+
+
+# 2012 MISSING TEETH calculations
+#for 2012, Created a new variable called 'MT' (with all 4 different levels of RMVTETH3)
+BRFSS_12 <- mutate(BRFSS_12,
+                   MT = case_when(
+                     RMVTETH3 == 8 ~ 1,  ## No Missing teeth
+                     RMVTETH3 == 1 ~ 2,  # Missing  1 to 5 teeth
+                     RMVTETH3 == 2 ~ 3,  # Missing 6 or more, but not all
+                     RMVTETH3 == 3 ~ 4,  # All teeth missing
+                     TRUE ~ NA_real_
+                   ))
+#checking the counts of missing teeth (MT)
+count(BRFSS_12, RMVTETH3, MT)                               
+
+# for 2012, Created a new variable called 'misteeth' that breaks it up into 3 categories (vs 4 categories)
+BRFSS_12 <- mutate(BRFSS_12,
+                   misteeth = case_when(
+                     MT == 1 ~ 1,  # NO MISSING TEETH
+                     MT == 2 ~ 2,   # Functional Dentition (missing 1-5 teeth)
+                     MT %in% c(3, 4) ~ 3,   # Not Functional Dentition
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, MT, misteeth)
+
+count(BRFSS_12, misteeth)
+
+count(BRFSS_12, MT, misteeth)
+
+
+# for 2012, Created a new variable called 'funcdent' that breaks it up into 2 parts:FuncDent and No Funcdent
+BRFSS_12 <- mutate(BRFSS_12,
+                   funcdent = case_when(
+                     MT %in% c(1,2) ~ 1,  #FUNCTIONAL DENTITION
+                     MT %in% c(3, 4) ~ 0, # NOT Functional Dentition
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, MT, funcdent)
+count(BRFSS_12, funcdent)
+
+
+# 2018 MISSING TEETH calcuations
+#for 2018, Created a new variable called 'MT' (with all 4 different levels of RMVTETH4)
+BRFSS_18 <- mutate(BRFSS_18,
+                   MT = case_when(
+                     RMVTETH4 == 8 ~ 1, #NO missing teeth
+                     RMVTETH4 == 1 ~ 2, # 1-5 missing teeth
+                     RMVTETH4 == 2 ~ 3, # More than 5 but not all
+                     RMVTETH4 == 3 ~ 4, # All missing teeth
+                     TRUE ~ NA_real_
+                   ))
+count(BRFSS_18, RMVTETH4, MT)    
+
+table(BRFSS_18$RMVTETH4)
+
+BRFSS_18 <- mutate(BRFSS_18,
+                   MT = case_when(
+                     RMVTETH4 == 8 ~ 1,
+                     RMVTETH4 == 1 ~ 2,
+                     RMVTETH4 == 2 ~ 3,
+                     RMVTETH4 == 3 ~ 4,
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, RMVTETH4, MT)    
+
+# for 2018, Created a new variable called 'misteeth' that breaks it up into 3 categories (vs 4 categories)
+BRFSS_18 <- mutate(BRFSS_18,
+                   misteeth = case_when(
+                     MT == 1 ~ 1,  # NO MISSING TEETH
+                     MT == 2 ~ 2,   # Functional Dentition
+                     MT %in% c(3, 4) ~ 3,   # Not Functional Dentition
+                     TRUE ~ NA_real_
+                   ))
+count(BRFSS_18, MT, misteeth)
+
+#for 2018, Created a new variable called 'funcdent' that breaks it up into 2 parts:FuncDent and No Funcdent
+BRFSS_18 <- mutate(BRFSS_18,
+                   funcdent = case_when(
+                     MT %in% c(1,2) ~ 1, #Functional Dentiion mixxing 0 - 5 teeth
+                     MT %in% c(3, 4) ~ 0,  #NOT functional dentition
+                     TRUE ~ NA_real_
+                   ))
+count(BRFSS_18, funcdent)
+
+# for 2012, created 4 different levels of CB ...for models #2 and models #3
+BRFSS_12 <- mutate(BRFSS_12,
+                   CB_0718 = case_when(
+                     `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed (REFERENCE VARIABLE)
+                     `_STATE` %in% c(2,5,9,11,17, 18,19,21,22,25,26,27,30,31,34,35,36,37,38,39, 41,42,44,46,50,53,55) ~ 3, #ALWAYS Exposed
+                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1,  #GAINED EXPOSURE (REFERENCE)
+                     `_STATE` %in% c(15) ~ 1,  #LOST EXPOSURE (REFERENCE)
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_STATE`, CB_0718)
+count(BRFSS_12, CB_0718)
+table1<-count(BRFSS_12, `_STATE`,CB_0718)
+#view(table1)
+
+# for 2018, created 4 different levels of CB ...for models #2 and models #3
+BRFSS_18 <- mutate(BRFSS_18,
+                   CB_0718 = case_when(
+                     `_STATE` %in% c(1, 4, 10, 12, 13, 16, 23, 24, 28, 29, 32, 33, 40, 47, 48, 49, 54) ~ 2,  #NEVER exposed
+                     `_STATE` %in% c(2,5,9,11,17, 18,19,21,22,25,26,27,30,31,34,35,36,37,38,39, 41,42,44,46,50,53,55) ~ 3, #Always Exposed aka KEPT
+                     `_STATE` %in% c(6,8,20,45,51,56) ~ 1, #Gained exposure
+                     `_STATE` %in% c(15) ~ 1,  #Lost exposure  #HAWAII 
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, `_STATE`, CB_0718)
+count(BRFSS_18, CB_0718)
+
+table<-count(BRFSS_18, `_STATE`, CB_0718)
+
+#print(n=53,table)
+
+#For 2012, this is for Model #1..... only two levels of Comprehensive benefits
+BRFSS_12 <- mutate(BRFSS_12,
+                   CB_1218 = case_when(
+                     `_STATE` %in% c(1, 4, 5, 8, 10, 11, 12, 13, 15, 16, 17, 18, 20, 21, 22, 27, 24, 26, 27, 28, 29, 30, 31, 32, 33, 40, 42, 45, 46, 47, 48, 49, 50, 51, 54) ~ 1,  #Emergency benefits, NEVER had Compreh Benefits (REFERENCE VARIABLE)
+                     `_STATE` %in% c(2,6, 9, 19, 25, 34, 35, 36, 37, 38, 39, 41, 44, 53, 55) ~ 2, #ALWAYS had Compreh Benefits
+                      TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_STATE`, CB_1218)
+
+#For 2018, this is for Model #1..... only two levels of Comprehensive benefits
+BRFSS_18 <- mutate(BRFSS_18,
+                   CB_1218 = case_when(
+                     `_STATE` %in% c(1, 4, 5, 8, 10, 11, 12, 13, 15, 16, 17, 18, 20, 21, 22, 27, 24, 26, 27, 28, 29, 30, 31, 32, 33, 40, 42, 45, 46, 47, 48, 49, 50, 51, 54) ~ 1,  #Emergency benefits, NEVER had Compre Benefits =Emergencyt
+                     `_STATE` %in% c(2,6, 9, 19, 25, 34, 35, 36, 37, 38, 39, 41, 44, 53, 55) ~ 2, #Always had Compreh Benefits
+                     TRUE ~ NA_real_
+                   ))
+                 
+count(BRFSS_18, `_STATE`, CB_1218)
+
+#For 2012, the education levels 
+BRFSS_12 <- mutate(BRFSS_12,
+                   educate = case_when(
+                     `_EDUCAG` == 1 ~ 2,  # < than HS
+                     `_EDUCAG` == 2 ~ 3,  #only HS
+                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_EDUCAG`, educate)
+
+#For 2018, the education levels 
+BRFSS_18 <- mutate(BRFSS_18,
+                   educate = case_when(
+                     `_EDUCAG` == 1 ~ 2,  # < than HS
+                     `_EDUCAG` == 2 ~ 3,  #only HS
+                     `_EDUCAG` %in% c(3,4) ~ 1,  # > than HS
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, `_EDUCAG`, educate)
+#not being used
+BRFSS_12 <- mutate(BRFSS_12,
+                   agecat = case_when(
+                     #      `_AGEG5YR` == 2 ~ 2, 
+                     #      `_AGEG5YR` == 3 ~ 3,
+                     `_AGEG5YR` == 4 ~ 2,  #AGED 35 - 39
+                     `_AGEG5YR` == 5 ~ 3,  #AGED 40 - 44
+                     `_AGEG5YR` == 6 ~ 4,  #OLDER PEOPLE  45 - 49 (all group into one category)
+                     `_AGEG5YR` == 7 ~ 1,  #OLDER PEOPLE  50 - 54 (all group into one category)
+                     #`_AGEG5YR` == 8 ~ 1,  #OLDER PEOPLE   55 - 59  (all group into one category)
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_AGEG5YR`, agecat)
+
+#not being used
+BRFSS_12 <- mutate(BRFSS_12,
+                   agecat_more = case_when(
+                     #      `_AGEG5YR` == 2 ~ 2,
+                     #      `_AGEG5YR` == 3 ~ 3,
+                     `_AGEG5YR` == 4 ~ 2,   #AGED 35 - 39
+                     `_AGEG5YR` == 5 ~ 3,   #AGED 40 - 44
+                     `_AGEG5YR` == 6 ~ 4,   #OLDER PEOPLE  45-49 yrs  
+                     `_AGEG5YR` == 7 ~ 5,   #OLDER PEOPLE  50-54 yrs  
+                     `_AGEG5YR` == 8 ~ 6,   #OLDER PEOPLE  55-59 yrs  
+                     `_AGEG5YR` == 9 ~ 7,   #OLDER PEOPLE  60-64 yrs  
+                     `_AGEG5YR` == 10 ~ 8,  #OLDER PEOPLE 65-69 yrs (all group into one category)
+                     `_AGEG5YR` == 11 ~ 9,  #OLDER PEOPLE  70-74 yrs (all group into one category)
+                     `_AGEG5YR` == 12 ~ 10, #OLDER PEOPLE  75-79 yrs (all group into one category)
+                     `_AGEG5YR` == 13 ~ 11, #OLDER PEOPLE  80+ yrs (all group into one category)
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_AGEG5YR`, agecat_more)
+
+#for 2018, these are the Different Age Category levels
+BRFSS_18 <- mutate(BRFSS_18,
+                   agecat = case_when(
+                     #      `_AGEG5YR` == 2 ~ 2,
+                     #      `_AGEG5YR` == 3 ~ 3,
+                     `_AGEG5YR` == 4 ~ 2,   #AGED 35 - 39
+                     `_AGEG5YR` == 5 ~ 3,   #AGED 40 - 44
+                     `_AGEG5YR` == 6 ~ 4,   #OLDER PEOPLE  45 - 49 (all group into one category)
+                     `_AGEG5YR` == 7 ~ 1,   #OLDER PEOPLE  50 - 54 (all group into one category)
+                     #`_AGEG5YR` == 8 ~ 1,   #OLDER PEOPLE  55 - 59 (all group into one category)
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, `_AGEG5YR`, agecat)
+
+#not being used
+BRFSS_18 <- mutate(BRFSS_18,
+                   agecat_more = case_when(
+                     #      `_AGEG5YR` == 2 ~ 2,
+                     #      `_AGEG5YR` == 3 ~ 3,
+                     `_AGEG5YR` == 4 ~ 2,   #AGED 35 - 39
+                     `_AGEG5YR` == 5 ~ 3,   #AGED 40 - 44
+                     `_AGEG5YR` == 6 ~ 4,   #OLDER PEOPLE  45-49 yrs  
+                     `_AGEG5YR` == 7 ~ 5,   #OLDER PEOPLE  50-54 yrs  
+                     `_AGEG5YR` == 8 ~ 6,   #OLDER PEOPLE  55-59 yrs  (all group into one category)
+                     `_AGEG5YR` == 9 ~ 7,   #OLDER PEOPLE  60-64 yrs  (all group into one category)
+                     `_AGEG5YR` == 10 ~ 8,  #OLDER PEOPLE 65-69 yrs (all group into one category)
+                     `_AGEG5YR` == 11 ~ 9,  #OLDER PEOPLE  70-74 yrs (all group into one category)
+                     `_AGEG5YR` == 12 ~ 10, #OLDER PEOPLE  75-79 yrs (all group into one category)
+                     `_AGEG5YR` == 13 ~ 11, #OLDER PEOPLE  80+ yrs (all group into one category)
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, `_AGEG5YR`, agecat_more)
+
+#For 2012, this is sex variable, if =1 (then female, reference), if =2 (it is male)
+BRFSS_12 <- mutate(BRFSS_12,
+                   male = case_when(
+                     SEX == 1 ~ 2, # MALE 
+                     SEX == 2 ~ 1, # FEMALE (reference)
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, SEX, male)
+
+
+#For 2018, this is sex variable, if =1 (then female, reference), if =2 (it is male)
+BRFSS_18 <- mutate(BRFSS_18,
+                   male = case_when(
+                     SEX1 == 1 ~ 2, #males
+                     SEX1 == 2 ~ 1, #female (reference)
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, SEX1, male)
+
+#for 2012, this is smoking variable
+BRFSS_12 <- mutate(BRFSS_12,
+                   smoker = case_when(
+                     `_SMOKER3` %in% c(1,2) ~ 2,  # CURRENT smoker (Reference variable)
+                     `_SMOKER3` == 3 ~ 3,  # Former smoker (they used to smoke)
+                     `_SMOKER3` == 4 ~ 1,  # NEVER smoked
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_SMOKER3`, smoker)
+
+#for 2018, this is smoking variable
+BRFSS_18 <- mutate(BRFSS_18,
+                   smoker = case_when(
+                     `_SMOKER3` %in% c(1,2) ~ 2,  # CURRENT smoker (Reference variable) - smokes some days, or everyday 
+                     `_SMOKER3` == 3 ~ 3,         # Former smoker (they used to smoke)
+                     `_SMOKER3` == 4 ~ 1,         # NEVER smoked
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, `_SMOKER3`, smoker)
+
+
+#for 2012, this is Race/Ethnicity variable
+BRFSS_12 <- mutate(BRFSS_12,
+                   raceethn = case_when(
+                     `_RACE_G` == 1 ~ 2,  # White Not-Hispanic
+                     `_RACE_G` == 2 ~ 3,  # Black  Not-Hispanic
+                     `_RACE_G` == 3 ~ 4,  # Hispanic
+                     `_RACE_G` %in% c(4,5) ~ 1,  # Other Multi
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_RACE_G`, raceethn)
+
+#for 2018, this is Race/Ethnicity variable
+BRFSS_18 <- mutate(BRFSS_18,
+                   raceethn = case_when(
+                     `_RACE_G1` == 1 ~ 2,  # White Not-Hispanic
+                     `_RACE_G1` == 2 ~ 3,  # Black  Not-Hispanic
+                     `_RACE_G1` == 3 ~ 4,  # Hispanic
+                     `_RACE_G1` %in% c(4,5) ~ 1,  # Other Multi
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, `_RACE_G1`, raceethn)
+
+
+#for 2012, this is Poor Health variable
+BRFSS_12 <- mutate(BRFSS_12,
+                   poorhlth = case_when(
+                     GENHLTH %in% c(4,5) ~ 2,  # Poor Health
+                     GENHLTH %in% c(1,2,3) ~ 1,  #Excellent/Good health
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, GENHLTH, poorhlth)
+
+#for 2018, this is Poor Health variable
+BRFSS_18 <- mutate(BRFSS_18,
+                   poorhlth = case_when(
+                     GENHLTH %in% c(4,5) ~ 2, # Poor Health
+                     GENHLTH %in% c(1,2,3) ~ 1, #Excellent/Good health
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, GENHLTH, poorhlth)
+
+#For 2012, this is the INCOME TO POVERTY RATIO CALCULATION !!!!
+BRFSS_12 <- mutate(BRFSS_12,
+                   parent = case_when(
+                     CHILDREN >= 1 & CHILDREN <= 87 ~ 1,
+                     CHILDREN == 88 ~ 0, TRUE ~ NA_real_))
+
+parentcount<-count(BRFSS_12, parent, CHILDREN) 
+
+BRFSS_12 <- mutate(BRFSS_12,
+                   NUM = case_when(
+                     MARITAL == 1 ~ 2 + CHILDREN,
+                     MARITAL > 1 | MARITAL <= 6 ~ 1 + CHILDREN,
+                     MARITAL ==9 ~ 1 + CHILDREN, TRUE ~ NA_real_))
+
+count(BRFSS_12, MARITAL, NUM)     
+
+BRFSS_12 <- mutate(BRFSS_12,
+                   income = case_when(
+                     `_INCOMG` == 1 ~ 7500,
+                     `_INCOMG` == 2 ~ 20000,
+                     `_INCOMG` == 3 ~ 30000,
+                     `_INCOMG` == 4 ~ 42500,
+                     `_INCOMG` == 5 ~ 50000,
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_12, `_INCOMG`, income)
+
+BRFSS_12 <- mutate(BRFSS_12,
+                   hhscom = case_when(
+                     NUM == 1 ~ 11170,  # Federal Poverty 
+                     NUM == 2 ~ 15130,
+                     NUM == 3 ~ 19090,
+                     NUM == 4 ~ 23050,
+                     NUM == 5 ~ 27010,
+                     NUM == 6 ~ 30970,
+                     NUM == 7 ~ 34930,
+                     NUM == 8 ~ 38890,
+                     NUM >= 9 ~ 38890+(3960*(NUM-8)),TRUE ~ NA_real_))
+
+BRFSS_12 <- mutate(BRFSS_12,
+                   pov = income/hhscom) 
+
+BRFSS_12 <- mutate(BRFSS_12,
+                   pov138two = case_when(
+                     pov <= 1.33 ~ 2,   # QUALIFY FOR MEDICAID : 133% * FPL . = 1.33*11170 = 15,414 , for 1 member
+                     pov > 1.33 ~ 1, TRUE ~ NA_real_))  # NOT qualified for Medicaid
+
+count(BRFSS_12, pov138two)
+
+
+
+#For 2018, this is the INCOME TO POVERTY RATIO CALCULATION !!!!
+BRFSS_18 <- mutate(BRFSS_18,
+                   income = case_when(
+                     `_INCOMG` == 1 ~ 7500,
+                     `_INCOMG` == 2 ~ 20000,
+                     `_INCOMG` == 3 ~ 30000,
+                     `_INCOMG` == 4 ~ 42500,
+                     `_INCOMG` == 5 ~ 50000,
+                     TRUE ~ NA_real_
+                   ))
+
+count(BRFSS_18, `_INCOMG`, income)
+
+BRFSS_18 <- mutate(BRFSS_18,
+                   parent = case_when(
+                     CHILDREN >= 1 & CHILDREN <= 87 ~ 1,
+                     CHILDREN == 88 ~ 0, TRUE ~ NA_real_))
+
+count(BRFSS_18, parent, CHILDREN) 
+
+
+BRFSS_18 <- mutate(BRFSS_18,
+                   NUM = case_when(
+                     MARITAL == 1 ~ 2 + CHILDREN,
+                     MARITAL > 1 | MARITAL <= 6 ~ 1 + CHILDREN,
+                     MARITAL ==9 ~ 1 + CHILDREN, TRUE ~ NA_real_))
+
+count(BRFSS_18, MARITAL, NUM) 
+
+BRFSS_18 <- mutate(BRFSS_18,
+                   hhscom = case_when(
+                     NUM == 1 ~ 12140,
+                     NUM == 2 ~ 16460,
+                     NUM == 3 ~ 20780,
+                     NUM == 4 ~ 25100,
+                     NUM == 5 ~ 29420,
+                     NUM == 6 ~ 33740,
+                     NUM == 7 ~ 38060,
+                     NUM == 8 ~ 42380,
+                     NUM >= 9 ~ 42380+(4320*(NUM-8)),TRUE ~ NA_real_))
+
+BRFSS_18 <- mutate(BRFSS_18,
+                   pov = income/hhscom) 
+
+count(BRFSS_18, pov)  
+
+BRFSS_18 <- mutate(BRFSS_18,
+                   pov138two = case_when(
+                     pov <= 1.38 ~ 2,  #Medicaid
+                     pov > 1.38 ~ 1, TRUE ~ NA_real_))  #NOT Medicaid
+
+count(BRFSS_18, pov138two)
+
+
+BRFSS_12 = drop_na(BRFSS_12, MT,  funcdent, misteeth, agecat, agecat_more, educate,survyear, parent, pov138two, CB_1218,
+                   CB_0718, educate, smoker, poorhlth, male, raceethn, `_STATE`, `_LLCPWT`, `_STSTR`, `_PSU`)
+BRFSS_18 = drop_na(BRFSS_18, MT,  funcdent, misteeth, agecat, agecat_more, educate, survyear, parent, pov138two, CB_1218,
+                   CB_0718, educate, smoker, poorhlth, male, raceethn, `_STATE`, `_LLCPWT`, `_STSTR`, `_PSU`)
+View(BRFSS_12)
+DF1 <-dplyr::select(BRFSS_12, funcdent, misteeth, agecat, agecat_more, educate, survyear, parent, pov138two,
+                      smoker, poorhlth, male, raceethn, `_STATE`, CB_1218, CB_0718, `_LLCPWT`, `_STSTR`, `_PSU`)
+               
+          
+DF2<-dplyr::select(BRFSS_18, funcdent, misteeth, agecat, agecat_more, educate, survyear, parent, pov138two,
+                      smoker, poorhlth, male, raceethn, `_STATE`, CB_1218, CB_0718, `_LLCPWT`, `_STSTR`, `_PSU`)
+total <- rbind(DF1,DF2)
+
+count(total)
+count(total$survyear==2012)
+#names(total)
+names(BRFSS_12)
+names(BRFSS_18)
+
+
+
+
+#str(BRFSS_12)
+#write.csv2(BRFSS_12, "BRFSS_1.csv")
+#data <- read.csv("BRFSS_1.csv",
+                # header = FALSE, sep = "\t")
+
+#factor varaibles
+total$survyear<-as.factor(total$survyear)
+total$agecat<-as.factor(total$agecat)
+total$male<-as.factor(total$male)
+total$smoker<-as.factor(total$smoker)
+total$poorhlth<-as.factor(total$poorhlth)
+total$educate<-as.factor(total$educate)
+total$raceethn<-as.factor(total$raceethn)
+total$`_STATE`<-as.factor(total$`_STATE`)
+total$CB_1218<-as.factor(total$CB_1218)
+total$CB_0718<-as.factor(total$CB_0718)
+total$pov138two<-as.factor(total$pov138two)
+
+total$agecat_more<-as.factor(total$agecat_more)
+
+count(total,CB_0718)
+count(total,CB_1218)
+
+levels(total$CB_0718)
+levels(total$survyear)
+levels(total$pov138two)
+# Change the reference level to '6'
+
+
+total$survyear <- relevel(total$survyear, ref = "2018")
+
+levels(total$survyear)
+
+total$survyear<-as.factor(total$survyear)
+levels(total$survyear)
+
+design1 <- svydesign(id = ~1, strata = ~`_STSTR`, weights = ~`_LLCPWT`, data = total)  # COMPLEX SURVEY
+design1
+summary(design1)
+
+# Example of breaking down the rowSums operation
+#row_sums_result <- c()
+# #chunk_size <- 1000  # Adjust based on your system's capability
+# num_rows <- nrow(BRFSS_12)
+# 
+# for (i in seq(1, num_rows, by = chunk_size)) {
+#   chunk_end <- min(i + chunk_size - 1, num_rows)
+#   chunk <- BRFSS_12[i:chunk_end, ]
+#   row_sums_result <- c(row_sums_result, rowSums(chunk))
+# }
+
+
+#total$l
+count(BRFSS_18, `_AGEG5YR`, agecat_more)
+
+
+#Bivariate Table - filters for different parts of the table
+
+#1 
+#NOT Medicaid eligible, NON-COMPREHENSIVE Benefits... let's do this first!! THIS ONE !!!!!!!!!! (Cell E7)
+filter1<-filter(total, pov138two ==1,survyear==2012, CB_1218==1)  # NOT Medicaid, 2012 , NEVER had CB
+summary(filter1)
+count(filter1, agecat)
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+
+x1 <- filter1$agecat[complete.cases(filter1$agecat)]
+x1 <-ifelse(x1==2,1,0)
+x1
+
+#write out variables that are in the rows
+var_rows  <- c("agecat","educate","male","raceethn","smoker","poorhlth")
+var_columns  <- c("pov138two","survyear", "CB_1218") 
+
+
+# summarise counts for each category
+bivariate_table <- data.frame()
+for (i in var_rows) {
+  total$var_i <- total[[i]]
+  temp <- total %>%
+    group_by(var_i, pov138two, survyear, CB_1218) %>%
+    summarise(count = n()) %>%
+    as.data.frame()
+  temp$var_name <- i
+  bivariate_table <- rbind(bivariate_table, temp)
+}
+
+
+bivariate_table <- bivariate_table[complete.cases(bivariate_table),]
+print(bivariate_table)
+
+# save bivariate table as csv
+write.csv(bivariate_table, "C:/Users/mxv17/OneDrive/Desktop/R_for_BRFSS/bivar_table.csv")
+
+# reshape data for t test
+library("reshape2")
+temp <- dcast(bivariate_table, var_name + var_i + pov138two + CB_1218 ~ survyear,value.var  = "count")
+colnames(temp) <- c("var_name", "level", "pov138two", "CB_1218", "year_2018", "year_2012")
+
+# calculate the totals
+temp <- temp %>% 
+  group_by(var_name, pov138two, CB_1218) %>% 
+  summarise(total_2012 = sum(year_2012), total_2018 = sum(year_2018)) %>% 
+  left_join(temp, by = c("var_name", "pov138two", "CB_1218")) %>%
+  as.data.frame()
+
+# percentage and SD
+temp$perc_2012 <- round(temp$year_2012 / temp$total_2012 * 100, 2)
+temp$perc_2018 <- round(temp$year_2018 / temp$total_2018 * 100, 2)
+
+# loop for t test
+for (i in 1:nrow(temp)) {
+  samp_2012 <- c(rep(1, temp[i, "year_2012"]), rep(0, temp[i, "total_2012"] - temp[i, "year_2012"]))
+  samp_2018 <- c(rep(1, temp[i, "year_2018"]), rep(0, temp[i, "total_2018"] - temp[i, "year_2018"]))
+  ttest_i <- t.test(samp_2012, samp_2018)
+  temp[i, "t-value"] <- ttest_i$statistic
+  temp[i, "p-value"] <- ttest_i$p.value
+}
+
+# check significance
+temp$sign <- ifelse(temp$`p-value` < 0.05, "*", "")
+
+# save t-test table as csv
+write.csv(temp, "C:/Users/mxv17/OneDrive/Desktop/R_for_BRFSS/t-test_table.csv")
+
+
+#2
+#NOT Medicaid eligible, NOT CB............. ...... let's do this second!! THIS ONE !!!!!!!!!! (Cell F7)
+filter1<-filter(total, pov138two ==1,survyear==2018, CB_1218==1)  # NOT Medicaid, 2018 , NEVER had CB
+summary(filter1)
+count(filter1, agecat)
+
+x2 <- filter1$agecat[complete.cases(filter1$agecat)]
+x2 <-ifelse(x1==2,1,0)
+x2
+
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+
+#3
+#NOT Medicaid eligible, COMPREHENSIVE benefits, 2012
+filter1<-filter(total, pov138two ==1,survyear==2012, CB_1218==2)  # NOT Medicaid, 2012 ,  COMPREHENSIVE benefits
+summary(filter1)
+count(filter1,agecat)
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+#4
+#NOT Medicaid eligible, COMPREHENSIVE benefits, 2018
+filter1<-filter(total, pov138two ==1,survyear==2018, CB_1218==2)  # NOT Medicaid, 2018 ,  COMPREHENSIVE benefits
+summary(filter1)
+count(filter1, agecat)
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+
+#MEDICAID ELIGIBLE (OTHER HALF)
+#5
+#Medicaid eligible,  NOT CB, 2012
+filter1<-filter(total, pov138two ==2,survyear==2012, CB_1218==1)  # Medicaid, 2012 , NOT CB, 2012
+summary(filter1)
+count(filter1, agecat)
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+
+#6
+#Medicaid eligible, NOT CB, 2018
+filter1<-filter(total, pov138two ==2,survyear==2018, CB_1218==1)  # Medicaid, 2018 , NOT CB
+summary(filter1)
+count(filter1, agecat)
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+
+#7
+#Medicaid eligible, COMPREHENSIVE benefits, 2012
+filter1<-filter(total, pov138two ==2,survyear==2012, CB_1218==2)  # Medicaid, 2012 , CB
+summary(filter1)
+count(filter1, agecat)
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+
+#8
+#Medicaid eligible, COMPREHENSIVE benefits, 2018
+filter1<-filter(total, pov138two ==2,survyear==2018, CB_1218==2)  # Medicaid, 2018 , CB
+summary(filter1)
+count(filter1, agecat)
+
+count(filter1, educate)
+
+count(filter1, male)
+
+count(filter1, raceethn)
+
+count(filter1, smoker)
+
+count(filter1, poorhlth)
+
+
+
+
+
+# STANDARD ERROR CALCULATION!!!!
+# consider a vector with 10 elements
+a <- c(179, 160, 136, 227, 123, 23,
+        45, 67, 1, 234)
+
+# calculate standard error
+print(sd(a)/sqrt(length((a))))
+
+
+# calculate standard error using in built 
+# function
+print(std.error(a))
+
+
+
+# BIVARIATE RESULTS -- needs to use data WITHOUT missing values! 
+#Medicaid eligible
+filter1<-filter(total, pov138two ==1,survyear==2012)  # NOT Medicaid, 2012 
+summary(filter1)
+count(filter1)
+
+#Medicaid eligible
+filter1<-filter(total, pov138two ==1,survyear==2012)  # NOT Medicaid, 2012 , WITH COMPREHENSIVE BENEFITS
+summary(filter1)
+count(filter1)
+count(filter1, agecat==1)
+
+
+
+
+
+
+# MEDICAID qualified group
+
+filter_sg1 <- filter(total, survyear==2012 & pov138two ==1 & CB_1218== 2 )   # Comprehensive, NOT Medicaid, 2012   
+summary(filter_sg1)
+
+summary(filter(total, survyear==2018 & pov138two ==1 & CB_1218== 2 ))   # Comprehensive, NOT Medicaid, 2018  
+
+
+summary(filter(total, survyear==2012 & pov138two ==1 & CB_1218== 1 ))  # NOT COMPREHENSIVE, NOT Medicaid, 2012 & educate==1)
+
+
+summary(filter(total, survyear==2018 & pov138two ==1 & CB_1218== 1 ))  # NOT COMPREHENSIVE, NOT Medicaid, 2018  & educate==1
+
+
+# NOT MEDICAID qualified group for AGE GROUP BUCKETS!
+summary(filter(total, survyear==2012 & pov138two ==2 & CB_1218== 2 ))  #  Comprehensive,  Medicaid, 2012 
+
+
+summary(filter(total, survyear==2018 & pov138two ==2 & CB_1218== 2 ))  # Comprehensive,  Medicaid, 2018
+
+
+summary(filter(total, survyear==2012 & pov138two ==2 & CB_1218== 1 ))  #NOT COMPREHENSIVE,  Medicaid, 2012 
+
+
+summary(filter(total, survyear==2018 & pov138two ==2 & CB_1218== 1 ))  #NOT COMPREHENSIVE,  Medicaid, 2018 
+
+
+
+
+
+
+filter1<-filter(total , survyear==2012 & pov138two ==1 & CB_1218== 2 )  #& agecat_more==2  
+summary(filter1)
+
+
+
+
+
+
+
+ #model_1  (OLD MODEL)
+
+# model_1 <- glm(funcdent ~ pov138two + CB_0718 + survyear + pov138two*CB_0718  + survyear*pov138two + CB_0718*survyear 
+#                + survyear*CB_0718*pov138two + agecat + male + smoker + educate + poorhlth + raceethn +`_STATE`, data = total, family = binomial(link = "logit"))
+# 
+# summary(model_1)
+
+levels(BRFSS_18$CB_0718) 
+count(total,CB_0718)
+
+
+
+#DF <- within(DF, b<- relevel(b, ref))
+
+# Fit the linear model with the new reference level
+#model_new <- lm(mpg ~ as.factor(survyear), data = total)
+
+# MODEL 1 - SURVEY DESIGN!!!!!  PART A
+# DESIGN 1
+
+model1 <- svyglm(as.factor(funcdent) ~ 
+                   CB_1218+
+                   survyear+
+                   pov138two*CB_1218+
+                   survyear*pov138two +
+                   CB_1218*survyear +
+                   survyear*CB_1218*pov138two +
+                   agecat +
+                   male +
+                   smoker +
+                   educate +
+                   poorhlth +
+                   raceethn + 
+                   `_STATE`, 
+                 design = design1, family=binomial)
+
+
+summary(model1)
+
+
+
+      
+odds_ratio <- exp(model1$coefficients)
+odds_ratio
+
+odds_ratio <- exp(coef(model1))
+odds_ratio
+
+
+prob <- odds_ratio/(1 + odds_ratio)
+prob
+
+#extract coefficients and standard errors. How to access the object
+model1$coefficients 
+
+summary <- summary(model1)
+summary
+
+summary$coefficients
+summary2 <-summary$coefficients
+
+summary2[,2]
+
+
+
+names(total)
+
+
+mean <- 14.2
+SE <- mean/(sqrt(10))
+SE
+
+#DID for Model #1 (main/general DID)
+#1
+data1<-filter(total, CB_1218 == 2, pov138two == 2, survyear==2012)  # Always CB, LOW Income (MEDICAID), 2012
+n1<-nrow(data1)
+p1<-n1/nrow(total)
+p1
+count(data1,funcdent, is.na=F) # getting counts for different AGE groups!!
+nrow(data1)
+
+#2
+data2<-filter(total, CB_1218 == 2, pov138two == 2, survyear==2018)  # Always Exposed to CB, LOW Income (MEDICAID), 2018
+n2<-nrow(data2)
+p2<-n2/nrow(total)
+p2
+
+count(data2,funcdent, is.na=F) # getting counts for different AGE groups!!
+nrow(data2)
+
+
+#3
+data3<-filter(total, CB_1218 == 2, pov138two == 1, survyear==2012)  # Always Exposed to CB, High-Income (MEDICAID), 2012
+n3<-nrow(data3)
+p3<-n3/nrow(total)
+p3
+
+count(data3,funcdent, is.na=F) # getting counts for different AGE groups!!
+nrow(data3)
+
+#4
+data4<-filter(total, CB_1218 == 2, pov138two == 1, survyear==2018)  # Always Exposed to CB, High-Income (MEDICAID), 2018
+n4<-nrow(data4)
+p4<-n4/nrow(total)
+p4
+
+count(data4,funcdent, is.na=F) # getting counts for different AGE groups!!
+nrow(data4)
+
+
+#5
+data5<-filter(total, CB_1218 == 1, pov138two == 2, survyear==2012)  # Never CB, Low-Income (MEDICAID), 2012
+n5<-nrow(data5)
+p5<-n5/nrow(total)
+p5
+
+count(data5,funcdent, is.na=F) # getting counts for different AGE groups!!
+nrow(data5)
+
+#6
+data6<-filter(total, CB_1218 == 1, pov138two == 2, survyear==2018)  # Never CB, Low-Income (MEDICAID), 2018
+n6<-nrow(data6)
+p6<-n6/nrow(total)
+p6
+
+count(data6,funcdent,is.na=F) # getting counts for different AGE groups!!
+nrow(data6)
+
+
+#7
+data7<-filter(total, CB_1218 == 1, pov138two == 1, survyear==2012)  # Never CB, Low-Income (MEDICAID), 2018
+n7<-nrow(data7)
+p7<-n7/nrow(total)
+p7
+
+count(data7,funcdent, is.na=F) # getting counts for different AGE groups!!
+nrow(data7)
+
+
+#8
+data8<-filter(total, CB_1218 == 1, pov138two == 1, survyear==2018)  # Never CB, Low-Income (MEDICAID), 2018
+n8<-nrow(data8)
+p8<-n8/nrow(total)
+p8
+
+count(data8,funcdent,is.na=F) # getting counts for different AGE groups!!
+nrow(data8)
+
+
+
+
+
+#DID for Model #1 by AGE GROUP!!! (More granular)
+#1
+data1<-filter(total, CB_1218 == 2, pov138two == 2, survyear==2012)  # Always Exposed to CB, LOW Income (MEDICAID), 2012
+n1<-nrow(data1)
+p1<-n1/nrow(total)
+p1
+
+count(data1,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data1)
+
+
+#2
+data2<-filter(total, CB_1218 == 2, pov138two == 2, survyear==2018)  # Always Exposed to CB, LOW Income (MEDICAID), 2018
+n2<-nrow(data2)
+p2<-n2/nrow(total)
+p2
+
+count(data2,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data2)
+
+
+#3
+data3<-filter(total, CB_1218 == 2, pov138two == 1, survyear==2012)  # Always Exposed to CB, High-Income (MEDICAID), 2012
+n3<-nrow(data3)
+p3<-n3/nrow(total)
+p3
+
+count(data3,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data3)
+
+#4
+data4<-filter(total, CB_1218 == 2, pov138two == 1, survyear==2018)  # Always Exposed to CB, High-Income (MEDICAID), 2018
+n4<-nrow(data4)
+p4<-n4/nrow(total)
+p4
+
+count(data4,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data4)
+
+
+#5
+data5<-filter(total, CB_1218 == 1, pov138two == 2, survyear==2012)  # Never CB, Low-Income (MEDICAID), 2012
+n5<-nrow(data5)
+p5<-n5/nrow(total)
+p5
+
+count(data5,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data5)
+
+#6
+data6<-filter(total, CB_1218 == 1, pov138two == 2, survyear==2018)  # Never CB, Low-Income (MEDICAID), 2018
+n6<-nrow(data6)
+p6<-n6/nrow(total)
+p6
+
+count(data6,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data6)
+
+
+#7
+data7<-filter(total, CB_1218 == 1, pov138two == 1, survyear==2012)  # Never CB, Low-Income (MEDICAID), 2018
+n7<-nrow(data7)
+p7<-n7/nrow(total)
+p7
+
+count(data7,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data7)
+
+
+#8
+data8<-filter(total, CB_1218 == 1, pov138two == 1, survyear==2018)  # Never CB, Low-Income (MEDICAID), 2018
+n8<-nrow(data8)
+p8<-n8/nrow(total)
+p8
+
+count(data8,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data8)
+
+
+
+
+
+##count(total%>% (survyear==2012 & CB_1218 == 2 & pov138two ==2 )%>% agecat_more)
+
+# MODEL 1 - SURVEY DESIGN!!!!!  PART B
+# DESIGN 1
+model1_b <- svyglm(as.factor(funcdent) ~ 
+                   pov138two  +
+                   CB_1218 +
+                   survyear +
+                   pov138two*CB_1218 +
+                   survyear*pov138two +
+                   CB_1218*survyear +
+                   survyear*CB_1218*pov138two +
+                   agecat_more +
+                   male +
+                   smoker +
+                   educate +
+                   poorhlth +
+                   raceethn + 
+                   `_STATE`, 
+                 design = design1, family=binomial)
+
+
+summary(model1_b)
+
+
+odds_ratio <- exp(coef(model1_b))
+odds_ratio
+
+prob <- odds_ratio/(1 + odds_ratio)
+prob
+
+ 
+
+
+# MODEL 2 - LOOK HERE!!
+             
+model_2 <- svyglm(as.factor(funcdent) ~ 
+                    CB_0718 + 
+                    survyear + 
+                    CB_0718: survyear +
+                    agecat + 
+                    male + 
+                    smoker + 
+                    educate + 
+                    poorhlth + 
+                    raceethn +
+                    `_STATE`, 
+               design = design1,
+               family = binomial)
+
+summary(model_2)
+
+
+total[total$CB_0718==3 & total$survyear]
+
+
+cb_2_2012<-filter(total, CB_0718==1, survyear==2012)  #lots of data, tibble 94,032 x 17
+cb_2_2018<-filter(total, CB_0718==1, survyear==2018)  #lots of data, tibble 70,365 x 17
+
+mean(cb_2_2012$funcdent)
+
+
+cb_2_2012<-filter(total, CB_0718==2, survyear==2012)  #lots of data, tibble 94,032 x 17
+cb_2_2018<-filter(total, CB_0718==2, survyear==2018)  #lots of data, tibble 70,365 x 17
+
+cb_3_2012<-filter(total, CB_0718==3, survyear==2012) #NONE show up, it has a tibble: of 0x17 matrix (tibble is a pkg in R used to manipuate and print df. A tibble is the latest method for reimagining a dataset )
+cb_3_2018<-filter(total, CB_0718==3, survyear==2018)  # lots show up, a tibble of 17,303x 17 matrix
+
+cb_4_2012<-filter(total, CB_0718==4, survyear==2012) #NONE show up, it has a tibble of 0x17 matrix
+cb_4_2018<-filter(total, CB_0718==4, survyear==2018)  # lots show up, a tibble of 2,560 x17 matrix
+
+
+
+odds_ratio_2 <- exp(coef(model_2))
+odds_ratio_2
+
+
+prob <- odds_ratio_2/(1 + odds_ratio_2)
+prob
+
+
+# MODEL 3 - LOOK HERE!!
+View(total)
+levels(total$survyear)
+
+model_3 <- svyglm(as.factor(funcdent) ~ CB_0718 + survyear + pov138two
+               + CB_0718: survyear 
+               + CB_0718:pov138two
+               + survyear:pov138two
+               + CB_0718:survyear:pov138two
+               + agecat + male + smoker + educate + poorhlth + raceethn +`_STATE`, 
+               design = design1, 
+               family = binomial)
+
+summary(model_3)
+
+car::vif(model_3)
+
+#summ(model_3)
+#interact_plot(model_3, pred = CB_0718, modx = survyear)
+
+total[total$CB_0718==3 & total$survyear]
+
+cb_2_pov138two1<-filter(total, CB_0718==2, pov138two==1)  #lots of data, tibble 94,032 x 17
+cb_2_pov138two2<-filter(total, CB_0718==2, pov138two==2)  #lots of data, tibble 70,365 x 17
+
+cb_3_pov138two1<-filter(total, CB_0718==3, pov138two==1)   
+cb_3_pov138two2<-filter(total, CB_0718==3, pov138two==2) 
+
+cb_4_pov138two1<-filter(total, CB_0718==4, pov138two==1)   
+cb_4_pov138two2<-filter(total, CB_0718==4, pov138two==2) 
+
+
+odds_ratio_3 <- exp(coef(model_3))
+odds_ratio_3
+
+levels(total$pov138two)
+
+prob <- odds_ratio_3/(1 + odds_ratio_3)
+prob
+
+
+# DIFFERENCE IN DIFFERENCE!!!!
+
+
+
+model1 <- svyglm(as.factor(funcdent) ~ 
+                   pov138two  +
+                   CB_1218 +
+                   survyear +
+                   pov138two*CB_1218 +
+                   survyear*pov138two +
+                   CB_1218*survyear +
+                   survyear*CB_1218*pov138two +
+                   agecat +
+                   male +
+                   smoker +
+                   educate +
+                   poorhlth +
+                   raceethn + 
+                   `_STATE`, 
+                 design = design1, family=binomial)
+
+summary(model_1)
+
+#MODEL 1 - DID probabilities!!!   DID NOT DROP MISSING VALUES (I COMMENTED those lines out)
+# LEFT HAND SIDE
+data1<-filter(total,pov138two == 2, CB_0718 == 2, survyear==2012)  # LOW INCOME, Never had CB, 2012
+n1<-nrow(data1)
+p1<-n1/nrow(total) 
+p1
+
+count(data1,funcdent,agecat, is.na=F)  # getting counts for different AGE groups!!
+nrow(data1)
+
+# DATA 2
+data2<-filter(total,pov138two == 2, CB_0718 == 2, survyear==2018)  # LOW INCOME, Never had CB, 2018
+n2<-nrow(data2)
+p2<-n2/nrow(total)
+p2
+
+count(data2,funcdent,agecat, is.na=F)
+nrow(data2)
+
+# DATA 3
+data3<-filter(total,pov138two == 1, CB_0718 == 2, survyear==2012)  #HIGH income, Never had CB, 2012
+n3<-nrow(data3)
+p3<-n3/nrow(total)
+p3
+
+count(data3,funcdent,agecat, is.na=F)
+nrow(data3)
+
+# DATA 4
+data4<-filter(total,pov138two == 1, CB_0718 == 2, survyear==2018)  #HIGH income, Never had CB, 2018
+n4<-nrow(data4)
+p4<-n4/nrow(total)
+p4
+count(data4,funcdent, agecat, is.na=F)
+nrow(data4)
+
+# RIGHT HAND SIDE
+
+# DATA 5
+data5<-filter(total,pov138two == 2, CB_0718 == 3, survyear==2012)  # LOW INCOME, ALWAYS had CB, 2012
+n5<-nrow(data5)
+p5<-n5/nrow(total)
+p5
+
+count(data5,funcdent, agecat, is.na=F)
+nrow(data5)
+
+# DATA 6
+data6<-filter(total,pov138two == 2, CB_0718 == 3, survyear==2018)  # LOW INCOME, ALWAYS had CB, 2018
+n6<-nrow(data6)
+p6<-n6/nrow(total)
+p6
+
+count(data6,funcdent, agecat, is.na=F)
+nrow(data6)
+
+# DATA 7
+
+data7<-filter(total,pov138two == 1, CB_0718 == 3, survyear==2012)  #HIGH income, ALWAYS had CB, 2012
+n7<-nrow(data7)
+p7<-n7/nrow(total)
+p7
+
+count(data7,funcdent, agecat,is.na=F)
+nrow(data7)
+
+# DATA 8
+data8<-filter(total,pov138two == 1, CB_0718 == 3, survyear==2018)  #HIGH income, ALWAYS had CB, 2018
+n8<-nrow(data8)
+p8<-n8/nrow(total)
+p8
+
+count(data8,funcdent,agecat, is.na=F)
+nrow(data8)
+
+## This is GAINED CB
+# DATA 9
+data5<-filter(total,pov138two == 2, CB_0718 == 3, survyear==2012)  # LOW INCOME, ALWAYS had CB, 2012
+n5<-nrow(data5)
+p5<-n5/nrow(total)
+p5
+
+count(data5,funcdent, agecat, is.na=F)
+nrow(data5)
+
+# DATA 10
+data6<-filter(total,pov138two == 2, CB_0718 == 3, survyear==2018)  # LOW INCOME, ALWAYS had CB, 2018
+n6<-nrow(data6)
+p6<-n6/nrow(total)
+p6
+
+count(data6,funcdent, agecat, is.na=F)
+nrow(data6)
+
+# DATA 11
+
+data7<-filter(total,pov138two == 1, CB_0718 == 3, survyear==2012)  #HIGH income, ALWAYS had CB, 2012
+n7<-nrow(data7)
+p7<-n7/nrow(total)
+p7
+
+count(data7,funcdent, agecat,is.na=F)
+nrow(data7)
+
+# DATA 12
+data8<-filter(total,pov138two == 1, CB_0718 == 3, survyear==2018)  #HIGH income, ALWAYS had CB, 2018
+n8<-nrow(data8)
+p8<-n8/nrow(total)
+p8
+
+count(data8,funcdent,agecat, is.na=F)
+nrow(data8)
+
+
+
+
+# create proportion variable first..... TO CREATE DID , NEED TO DO THIS (for MODEL 1)
+prop <- c(p1,p2,p3,p4,p5,p6,p7,p8)
+
+surveyyear <- c(2012,2018,2012,2018,2012,2018,2012,2018)
+surveyyearcode<-c(0,1,0,1,0,1,0,1)
+pov138tw0_DID <- c(1,1,0,0,1,1,0,0)
+CB_1218_DID <- c(1,0,1,0,1,0,1,0)
+funcDent_DID <- c(1,1,1,1,1,1,1,1)
+
+# create dataframe
+data <-data.frame( cbind(prop, surveyyearcode, pov138tw0_DID, CB_0718_DID, funcDent_DID))
+data
+plot(prop)
+barplot((prop))
+?barplot
+barplot(formula=prop,horiz = FALSE, xlab = porportion, ylab = density)
+
+
+barplot(formula=prop, horiz = FALSE,
+        height = data$prop, 
+        main = "DID", 
+        xlab = "Proportion", 
+        ylab = "Density", 
+        #names.arg = IB$Browser,
+        border = "dark blue", 
+        col = "pink")
+
+
+
+# MODEL #2 - Proportions and DID Calculations
+model_2 <- svyglm(as.factor(funcdent) ~ 
+                    CB_0718   + survyear + CB_0718 : survyear+
+                    agecat + 
+                    male + 
+                    smoker + 
+                    educate + 
+                    poorhlth + 
+                    raceethn +
+                    `_STATE`, 
+                  design = design1,
+                  family = binomial)
+
+summary(model_2)
+
+#MODEL 2  DID!!!!
+# LEFT HAND SIDE SET of COLUMNS
+data1<-filter(total,CB_0718 == 2, survyear==2012)  # Never Exposed to CB, 2012,
+n1<-nrow(data1)
+p1<-n1/nrow(total)
+p1
+
+count(data1,funcdent,is.na=F)
+nrow(data1)
+
+
+data2<-filter(total, CB_0718 == 2, survyear==2018)  # Never Exposed to CB, 2018, has Functional Dentition
+n2<-nrow(data2)
+p2<-n2/nrow(total)
+p2
+
+count(data2,funcdent,is.na=F)
+nrow(data2)
+
+data3<-filter(total, CB_0718 == 3, survyear==2012)  # Always Exposed to CB, 2012, has Functional Dentition
+n3<-nrow(data3)
+p3<-n3/nrow(total)
+p3
+
+count(data3,funcdent,is.na=F)
+nrow(data3)
+
+
+data4<-filter(total, CB_0718 == 3, survyear==2018)  #Always Exposed to CB, 2018, has Functional Dentition
+n4<-nrow(data4)
+p4<-n4/nrow(total)
+p4
+
+count(data4,funcdent,is.na=F)
+nrow(data4)
+
+# RIGHT HAND SIDE SET of COLUMNS
+data5<-filter(total, CB_0718 == 1, survyear==2012)  # Gained Exposure to CB, 2012, has Functional Dentition
+n5<-nrow(data5)
+p5<-n5/nrow(total)
+p5
+
+count(data5,funcdent,is.na=F)
+nrow(data5)
+
+data6<-filter(total, CB_0718 == 1, survyear==2018)  # Gained Exposure to CB, 2018, has Functional Dentition
+n6<-nrow(data6)
+p6<-n6/nrow(total)
+p6
+
+count(data6,funcdent,is.na=F)
+nrow(data6)
+
+
+
+
+
+
+# create proportion variable first..... TO CREATE DID , NEED TO DO THIS (for MODEL 1)
+prop <- c(p1,p2,p3,p4,p5,p6,p7,p8)
+
+surveyyear <- c(2012,2018,2012,2018,2012,2018,2012,2018)
+surveyyearcode<-c(0,1,0,1,0,1,0,1)
+pov138tw0_DID <- c(1,1,0,0,1,1,0,0)
+CB_0718_DID <- c(1,0,1,0,1,0,1,0)
+funcDent_DID <- c(1,1,1,1,1,1,1,1)
+
+# create dataframe
+data <-data.frame( cbind(prop, surveyyearcode, pov138tw0_DID, CB_0718_DID, funcDent_DID))
+data
+plot(prop)
+barplot((prop))
+?barplot
+barplot(formula=prop,horiz = FALSE, xlab = porportion, ylab = density)
+
+
+barplot(formula=prop, horiz = FALSE,
+        height = data$prop, 
+        main = "DID", 
+        xlab = "Proportion", 
+        ylab = "Density", 
+        #names.arg = IB$Browser,
+        border = "dark blue", 
+        col = "pink")
+
+str(design1$variables)
+
+# THIRD MODEL!!!!!!
+# MODEL #3 - Proportions and DID Calculations
+model_3 <- svyglm(as.factor(funcdent) ~ CB_0718 + survyear + pov138two + CB_0718: survyear 
+                  + CB_0718:pov138two
+                  + survyear:pov138two
+                  + CB_0718:survyear:pov138two
+                  + agecat + male + smoker + educate + poorhlth + raceethn +`_STATE`, 
+                  design = design1, 
+                  family = binomial)
+
+summary(model_3)
+car::vif(model_3)
+car::vif(model_3, type=c("predictor"))
+?vif
+?svyglm
+
+
+
+
+# construct X matrix using model.matrix from stats package
+X3 <- model.matrix(~ CB_0718 + survyear + pov138two + CB_0718: survyear 
+                   + CB_0718:pov138two
+                   + survyear:pov138two
+                   + CB_0718:survyear:pov138two
+                   + agecat + male + smoker + educate + poorhlth + raceethn +`_STATE`,
+                   data = total)
+# remove col of 1's for intercept with X3[,-1]
+head(X3)
+svyvif(mobj=model_3, X=X3[,-1], w = total$`_LLCPWT`, stvar=NULL, clvar=NULL)
+svyvif(model_3)
+
+########################
+test_data1=total[c(0:20,137298:137338,210000:210020,212266),c(1,3,5,6,8,9,10,11,12,13,15,16,17)]
+
+design1 <- svydesign(id = ~1, strata = ~`_STSTR`, weights = ~`_LLCPWT`, data = total)
+design2 <- svydesign(id = ~1, strata = ~`_STSTR`, weights = ~`_LLCPWT`, data = test_data1)
+summary(design1)
+summary(design2)
+model_4 <- svyglm(as.factor(funcdent) ~ CB_0718 + survyear + pov138two + CB_0718: survyear 
+                  + CB_0718:pov138two
+                  + survyear:pov138two
+                  + CB_0718:survyear:pov138two
+                  + agecat+male + smoker + educate + poorhlth + raceethn+`_STATE`, 
+                  design = design2, 
+                  family = binomial)
+
+X4 <- model.matrix(~ CB_0718 + survyear + pov138two + CB_0718: survyear 
+                   + CB_0718:pov138two
+                   + survyear:pov138two
+                   + CB_0718:survyear:pov138two
+                   + male + smoker + educate + poorhlth + raceethn,
+                   data = test_data1)
+svyvif(mobj=model_3, X=X4[,-1], w = test_data1$`_LLCPWT`, stvar=NULL, clvar=NULL)
+svyvif(model_3)
+X4[,-1]
+########################
+
+
+# Visualizing the model
+# Visualizing the model. To gain deeper insights, we can visualize our model and its residuals
+# Visualizations often provide a clearer picture of what's happening 
+plot(model_3B, which = 1, main = "Model Fit")
+barplot(vif_values1, col = "skyblue", main = "Variance Inflation Factor (VIF)")
+
+?barplot
+
+# Setting up the model
+model <- lm(mpg ~ disp + hp + wt + drat, data = mtcars)
+vif_values <- vif(model)
+vif_values
+
+# Visualizing the model. This is an EXAMPLE of calcuating VIF for 'mtcars' dataset
+plot(model, which = 1, main = "Model Fit")
+barplot(vif_values, col = "skyblue", main = "Variance Inflation Factor (VIF)")
+
+cor_matrix <- cor(mtcars[c("disp", "hp", "wt", "drat")])
+cor_matrix
+# Visualizing the correlation matrix
+image(cor_matrix, main = "Correlation Matrix", col = colorRampPalette(c("blue", "white", "red"))(20))
+
+?cor
+?image
+?vif
+?colorRampPalette
+
+#Plotting influential values . Model assumption. 
+
+plot(cooks.distance(model_3), type="b",pch=18,col="red")
+
+
+
+#Calculating Cook's distance Threshold
+N = 270149
+k= 14
+# (4/ (N-k-1))  = 1.48 x 10^-5 = 0.0000148  0.0000148
+threshold <-  0.0000148
+abline(h= threshold,lty=2)
+
+
+#Trying to find the influential value 
+str(model_3)
+cooks_data <- model_3$data
+cooks_data$cooks_d <- cooks.distance(model_3)
+
+head(cooks_data)
+cooks_data$influencers <-cooks_data$(cooks_d>=0.0000148))
+cooks_data$influencers <- ifelse(cooks_data$cooks_d >= threshold, TRUE, FALSE)
+#this finds the first 5 obs... of my dataset
+head(cooks_data)
+
+
+inspect influencers
+subset(cooks_data, cooks_data$influencers == TRUE)
+
+probabilities <- predict(model_3, total, type = "response")
+probabilities
+predicted.classes <- ifelse(probabilities > 0.5, "pos", "neg")
+head(predicted.classes)
+
+mydata <- total %>%dplyr::select_if(is.numeric) 
+predictors <- colnames(mydata)
+# Bind the logit and tidying the data for plot
+mydata <- mydata %>% 
+  mutate(logit = log(probabilities/(1-probabilities))) %>% 
+  gather(key = "predictors", value = "predictor.value", -logit)
+ 
+  # IT CREATES A NEW COLUMN , that does that logit transformation
+  # logistic model creates probability...so this logit  is a scatter plot of transformation vs. each predictor. we'd want a 
+  # stragith line.   Look at black dots instead of blue line. Would be concerned about pedigree where it makes a curve. Oh no, not making linearity
+  # so then, if it is nonlinear, then we'd want to take the squre root that , or log of the variable 
+
+ggplot(mydata, aes(logit, predictor.value))+
+  geom_point(size = 0.5, alpha = 0.5) +
+  geom_smooth(method = "loess") + 
+  theme_bw() + 
+  facet_wrap(~predictors, scales = "free_y")
+
+
+
+
+#MODEL 3  DID !! Last model!!  DO THIS DID RESULTS FOR MODEL #3 -- and PLOTS!!FOR PAPER!!!
+
+# "NEVER Exposed" compreh benefits
+
+data1<-filter(total, CB_0718 == 2, pov138two == 2, survyear==2012)  # NEVER Exposed to CB, LOW Income (MEDICAID), 2012
+n1<-nrow(data1)
+p1<-n1/nrow(total)
+p1
+
+count(data1,funcdent,agecat, is.na=F) # getting counts for different AGE groups!!
+nrow(data1)
+
+
+data2<-filter(total, CB_0718 == 2, pov138two == 2, survyear==2018)  #NEVER Exposed to CB, LOW Income (MEDICAID), 2018
+n2<-nrow(data2)
+p2<-n2/nrow(total)
+p2
+
+count(data2,funcdent,agecat, is.na=F)
+nrow(data2)
+
+
+data3<-filter(total, CB_0718 == 2, pov138two == 1, survyear==2012)  # NEVER Exposed to CB, High Income (NON-MEDICAID), 2012
+n3<-nrow(data3)
+p3<-n3/nrow(total)
+p3
+
+count(data3,funcdent,agecat,is.na=F)
+nrow(data3)
+
+data4<-filter(total, CB_0718 == 2, pov138two == 1, survyear==2018)  # NEVER Exposed to CB, High Income (NON-MEDICAID), 2018
+n4<-nrow(data2)
+p4<-n4/nrow(total)
+p4
+
+count(data4,funcdent,agecat,is.na=F)
+nrow(data4)
+
+
+
+
+## "ALWAYS had" compreh benefits - Bar Graps DID
+data5<-filter(total, CB_0718 == 3, pov138two == 2, survyear==2012)  # ALWAYS had CB, LOW Income, 2012,
+n5<-nrow(data5)
+p5<-n5/nrow(total)
+p5
+
+count(data5,funcdent,agecat,is.na=F)
+nrow(data5)
+
+
+data6<-filter(total, CB_0718 == 3, pov138two == 2, survyear==2018)  # ALWAYS had CB, Low Income, 2018,
+n6<-nrow(data6)
+p6<-n6/nrow(total)
+p6
+
+count(data6,funcdent,agecat,is.na=F)
+nrow(data6)
+
+data7<-filter(total, CB_0718 == 3, pov138two == 1, survyear==2012)  # ALWAYS had CB, High Income,  2012, 
+n7<-nrow(data7)
+p7<-n7/nrow(total)
+p7
+
+count(data7,funcdent,agecat,is.na=F)
+nrow(data7)
+
+
+data8<-filter(total, CB_0718 == 3, pov138two == 1, survyear==2018)  # ALWAYS had CB, High Income, 2018, 
+n8<-nrow(data8)
+p8<-n8/nrow(total)
+p8
+
+count(data8,funcdent,agecat,is.na=F)
+nrow(data8)
+
+
+
+
+# "GAINED/ LOST" CB, Bar Graps DID
+data9<-filter(total, CB_0718 == 1, pov138two == 2, survyear==2012)  # GAINED/LOST Exposure to CB, LOW INCOME, 2012
+n9<-nrow(data9)
+p9<-n9/nrow(total)
+p9
+
+count(data9,funcdent, agecat, is.na=F)
+nrow(data9)
+
+data10<-filter(total, CB_0718 == 1, pov138two == 2, survyear==2018)  # GAINED/LOST Exposure to CB,  LOW INCOME, 2018
+n10<-nrow(data10)
+p10<-n10/nrow(total)
+p10
+
+count(data10,funcdent, agecat, is.na=F)
+nrow(data10)
+
+data11<-filter(total, CB_0718 == 1, pov138two == 1, survyear==2012)  # GAINED/LOST Exposure to CB, HIGH INCOME, 2012, has Functional Dentition
+n11<-nrow(data11)
+p11<-n11/nrow(total)
+p11
+
+count(data11,funcdent, agecat, is.na=F)
+nrow(data11)
+
+data12<-filter(total, CB_0718 == 1, pov138two == 1, survyear==2018)  # GAINED/LOST Exposure to CB, HIGH INCOME, 2018, has Functional Dentition
+n12<-nrow(data12)
+p12<-n12/nrow(total)
+p12
+
+count(data12,funcdent, agecat, is.na=F)
+nrow(data12)
+
+
+# create proportion variable first..... TO CREATE DID , NEED TO DO THIS (for MODEL 1)
+prop <- c(p1,p2,p3,p4,p5,p6,p7,p8)
+
+surveyyear <- c(2012,2018,2012,2018,2012,2018,2012,2018)
+surveyyearcode<-c(0,1,0,1,0,1,0,1)
+pov138two_DID <- c(1,1,0,0,1,1,0,0)
+CB_1218_DID <- c(1,0,1,0,1,0,1,0)
+funcDent_DID <- c(1,1,1,1,1,1,1,1)
+
+# create dataframe
+data <-data.frame( cbind(prop, surveyyearcode, parent_DID, expMed_DID, funcDent_DID))
+data
+
